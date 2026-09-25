@@ -42,6 +42,16 @@ export class ReadLaterSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("手動分類を学習")
+			.setDesc("「カテゴリを変更」で移動したとき、そのドメインをカテゴリルールに追加し、次回から自動で同じカテゴリに入れる")
+			.addToggle((t) =>
+				t.setValue(s.learnDomain).onChange(async (v) => {
+					s.learnDomain = v;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
 			.setName("ページを取得して判定")
 			.setDesc("取り込み時にページを取得し、タイトル補完とダウンロードリンク検出を行う（通信が発生する）")
 			.addToggle((t) =>

@@ -1,18 +1,35 @@
-import { Notice, Plugin, TAbstractFile, TFile, TFolder, debounce, normalizePath, requestUrl } from "obsidian";
+import {
+	App,
+	Editor,
+	MarkdownFileInfo,
+	MarkdownView,
+	Notice,
+	Plugin,
+	SuggestModal,
+	TAbstractFile,
+	TFile,
+	TFolder,
+	debounce,
+	normalizePath,
+	requestUrl,
+} from "obsidian";
 import {
 	Entry,
 	ListDocument,
+	assignDomain,
 	classify,
 	detectToolByRules,
 	detectToolFromHtml,
 	extractTitle,
 	formatDate,
+	hostOf,
 	isDone,
 	normalizeUrl,
 	parseInbox,
 	parseList,
 	renderEntry,
 	renderList,
+	urlFromEntryLine,
 } from "./core";
 import { DEFAULT_SETTINGS, ReadLaterSettings } from "./defaults";
 import { ReadLaterSettingTab } from "./settings";
@@ -52,6 +69,31 @@ export default class ReadLaterPlugin extends Plugin {
 			name: "完了済みをアーカイブ",
 			callback: () => void this.archiveDone(),
 		});
+
+		this.addCommand({
+			id: "change-category",
+			name: "カテゴリを変更",
+			editorCheckCallback: (checking, editor, ctx) => {
+				if (ctx.file?.path !== normalizePath(this.settings.listPath)) return false;
+				const url = urlAtCursor(editor);
+				if (!url) return false;
+				if (!checking) void this.pickCategory(url, ctx);
+				return true;
+			},
+		});
+		this.registerEvent(
+			this.app.workspace.on("editor-menu", (menu, editor, ctx) => {
+				if (ctx.file?.path !== normalizePath(this.settings.listPath)) return;
+				const url = urlAtCursor(editor);
+				if (!url) return;
+				menu.addItem((item) =>
+					item
+						.setTitle("カテゴリを変更")
+						.setIcon("folder-input")
+						.onClick(() => void this.pickCategory(url, ctx)),
+				);
+			}),
+		);
 
 		this.app.workspace.onLayoutReady(() => {
 			void this.ensureInboxFolder();
@@ -210,6 +252,41 @@ export default class ReadLaterPlugin extends Plugin {
 		new Notice(reclassify ? "ReadLater: 再分類しました" : "ReadLater: 再整理しました");
 	}
 
+	/** カテゴリ一覧を出して、選ばれたカテゴリへエントリを移す */
+	private async pickCategory(url: string, ctx: MarkdownView | MarkdownFileInfo): Promise<void> {
+		// エディタ上の未保存の変更を先に書き出しておく
+		if (ctx instanceof MarkdownView) await ctx.save();
+		const s = this.settings;
+		const doc = await this.readList();
+		const current = doc.entries.find((e) => normalizeUrl(e.url) === normalizeUrl(url))?.category;
+		const names = [...s.categories.map((c) => c.name), s.toolCategory, ...doc.categoryOrder, s.defaultCategory];
+		const choices = [...new Set(names.filter((n) => n && n !== current))];
+		new CategoryModal(this.app, choices, current, (c) => void this.changeCategory(url, c)).open();
+	}
+
+	private async changeCategory(url: string, category: string): Promise<void> {
+		const s = this.settings;
+		const key = normalizeUrl(url);
+		await this.updateList((doc) => {
+			const e = doc.entries.find((x) => normalizeUrl(x.url) === key);
+			if (!e) return;
+			e.category = category;
+			if (category === s.toolCategory) e.isTool = true;
+		});
+
+		const host = hostOf(url);
+		const learnable = s.learnDomain && host && category !== s.toolCategory;
+		if (learnable) {
+			s.categories = assignDomain(s.categories, host, category === s.defaultCategory ? null : category);
+			await this.saveSettings();
+		}
+		new Notice(
+			learnable && category !== s.defaultCategory
+				? `ReadLater: 「${category}」に移動し、${host} を学習しました`
+				: `ReadLater: 「${category}」に移動しました`,
+		);
+	}
+
 	/** 既読（ツールは使用済みも）のエントリをアーカイブファイルへ移す */
 	async archiveDone(): Promise<void> {
 		let done: Entry[] = [];
@@ -281,6 +358,45 @@ export default class ReadLaterPlugin extends Plugin {
 	private async ensureParent(path: string): Promise<void> {
 		const dir = path.split("/").slice(0, -1).join("/");
 		if (dir && !this.app.vault.getAbstractFileByPath(dir)) await this.app.vault.createFolder(dir);
+	}
+}
+
+/** カーソル行（子行ならその親）のエントリ URL */
+function urlAtCursor(editor: Editor): string | null {
+	for (let i = editor.getCursor().line; i >= 0; i--) {
+		const line = editor.getLine(i);
+		const url = urlFromEntryLine(line);
+		if (url) return url;
+		// 子行（インデント）と空行以外に当たったらエントリ外
+		if (line.trim() && !/^\s/.test(line)) return null;
+	}
+	return null;
+}
+
+class CategoryModal extends SuggestModal<string> {
+	constructor(
+		app: App,
+		private categories: string[],
+		current: string | undefined,
+		private onChoose: (category: string) => void,
+	) {
+		super(app);
+		this.setPlaceholder(current ? `現在: ${current}（選択、または新しいカテゴリ名を入力）` : "カテゴリを選択、または新しい名前を入力");
+	}
+
+	getSuggestions(query: string): string[] {
+		const q = query.trim();
+		const hits = this.categories.filter((c) => c.toLowerCase().includes(q.toLowerCase()));
+		if (q && !this.categories.includes(q)) hits.push(q);
+		return hits;
+	}
+
+	renderSuggestion(category: string, el: HTMLElement): void {
+		el.setText(this.categories.includes(category) ? category : `＋ 新しいカテゴリ「${category}」`);
+	}
+
+	onChooseSuggestion(category: string): void {
+		this.onChoose(category);
 	}
 }
 
