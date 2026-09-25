@@ -24,6 +24,7 @@ export default class ReadLaterPlugin extends Plugin {
 	settings!: ReadLaterSettings;
 	private running = false;
 	private rerun = false;
+	private unparsable = new Set<string>();
 
 	private scheduleProcess = debounce(() => void this.processInbox(), 2000, true);
 
@@ -122,7 +123,16 @@ export default class ReadLaterPlugin extends Plugin {
 				// iCloud からの同期途中で空のことがある。次回に回す
 				if (!content.trim()) continue;
 				const fallbackDate = formatDate(new Date(file.stat.ctime));
-				for (const item of parseInbox(content, fallbackDate)) {
+				const items = parseInbox(content, fallbackDate);
+				// URL を読み取れないファイルは消さずに残して知らせる
+				if (!items.length) {
+					if (!this.unparsable.has(file.path)) {
+						this.unparsable.add(file.path);
+						new Notice(`ReadLater: URL を読み取れませんでした: ${file.path}`);
+					}
+					continue;
+				}
+				for (const item of items) {
 					const key = normalizeUrl(item.url);
 					if (known.has(key)) continue;
 					known.add(key);

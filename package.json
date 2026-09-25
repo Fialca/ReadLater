@@ -1,6 +1,6 @@
 {
   "name": "obsidian-readlater",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "iPhone Safari のショートカットから保存した URL を Obsidian でカテゴリ別チェックリストに整理する",
   "main": "main.js",
   "private": true,
