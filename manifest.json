@@ -1,0 +1,9 @@
+{
+  "id": "readlater-inbox",
+  "name": "ReadLater Inbox",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "ショートカットから保存した URL をカテゴリ別の既読/使用済みチェックリストに自動整理する",
+  "author": "fialca",
+  "isDesktopOnly": false
+}
