@@ -14,6 +14,8 @@ export interface ReadLaterSettings {
 	toolKeywords: string[];
 	fetchPage: boolean;
 	autoProcess: boolean;
+	/** カテゴリを手動変更したとき、そのドメインをルールに追加する */
+	learnDomain: boolean;
 }
 
 export const DEFAULT_SETTINGS: ReadLaterSettings = {
@@ -30,6 +32,7 @@ export const DEFAULT_SETTINGS: ReadLaterSettings = {
 		{ name: "SNS", domains: ["x.com", "twitter.com", "instagram.com", "threads.net", "reddit.com", "bsky.app", "note.com"], keywords: [] },
 		{ name: "ニュース", domains: ["nhk.or.jp", "nikkei.com", "asahi.com", "yomiuri.co.jp", "itmedia.co.jp", "gigazine.net", "news.yahoo.co.jp", "bbc.com", "reuters.com", "theverge.com"], keywords: ["ニュース"] },
 		{ name: "買い物", domains: ["amazon.co.jp", "amazon.com", "rakuten.co.jp", "item.rakuten.co.jp", "mercari.com", "shopping.yahoo.co.jp", "kakaku.com"], keywords: [] },
+		{ name: "マンガ", domains: ["comic-action.com", "shonenjumpplus.com", "comic-days.com", "comic-walker.com", "manga-one.com", "magcomi.com", "comic-fuz.com", "tonarinoyj.jp", "younganimal.com", "sokuyomi.jp"], keywords: ["漫画", "マンガ"] },
 		{ name: "レシピ", domains: ["cookpad.com", "kurashiru.com", "delishkitchen.tv"], keywords: ["レシピ"] },
 	],
 	toolDomains: [
@@ -52,4 +55,5 @@ export const DEFAULT_SETTINGS: ReadLaterSettings = {
 	toolKeywords: ["download", "ダウンロード", "インストール", "App Store", "Google Play", "Chrome ウェブストア", "Chrome Web Store", "フリーソフト", "freeware", "窓の杜"],
 	fetchPage: true,
 	autoProcess: true,
+	learnDomain: true,
 };

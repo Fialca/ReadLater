@@ -244,13 +244,36 @@ export function classify(title: string, url: string, rules: CategoryRule[]): str
 	const host = hostOf(url);
 	const lowerTitle = title.toLowerCase();
 	const lowerUrl = url.toLowerCase();
+	// ドメイン一致をキーワード一致より優先する（手動で学習させたドメインが確実に効くように）
 	for (const rule of rules) {
 		if (rule.domains.some((d) => matchDomain(host, lowerUrl, d))) return rule.name;
+	}
+	for (const rule of rules) {
 		if (rule.keywords.some((k) => k && (lowerTitle.includes(k.toLowerCase()) || lowerUrl.includes(k.toLowerCase())))) {
 			return rule.name;
 		}
 	}
 	return null;
+}
+
+/**
+ * ドメインを指定カテゴリのルールへ移す（他のルールからは外す）。
+ * category が null なら外すだけ。ルールが無ければ末尾に作る。
+ */
+export function assignDomain(rules: CategoryRule[], host: string, category: string | null): CategoryRule[] {
+	const next = rules.map((r) => ({ ...r, domains: r.domains.filter((d) => d.toLowerCase() !== host) }));
+	if (!category || !host) return next;
+	const target = next.find((r) => r.name === category);
+	if (target) target.domains.push(host);
+	else next.push({ name: category, domains: [host], keywords: [] });
+	return next;
+}
+
+/** リスト上の 1 行からエントリの URL を取り出す */
+export function urlFromEntryLine(line: string): string | null {
+	const m = line.match(ENTRY_RE);
+	if (!m) return null;
+	return parseLinkLine(m[2])?.url ?? null;
 }
 
 export function detectToolByRules(title: string, url: string, rules: ToolRules): boolean {
@@ -326,7 +349,7 @@ export function normalizeUrl(url: string): string {
 	}
 }
 
-function hostOf(url: string): string {
+export function hostOf(url: string): string {
 	try {
 		return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
 	} catch {

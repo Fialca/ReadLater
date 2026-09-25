@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	assignDomain,
 	classify,
+	urlFromEntryLine,
 	detectToolByRules,
 	detectToolFromHtml,
 	extractTitle,
@@ -155,5 +157,39 @@ describe("tool detection", () => {
 describe("normalizeUrl", () => {
 	it("トラッキングパラメータ・www・末尾スラッシュ・hash を無視", () => {
 		expect(normalizeUrl("https://www.example.com/a/?utm_source=x&id=1#top")).toBe(normalizeUrl("https://example.com/a?id=1"));
+	});
+});
+
+describe("カテゴリの手動変更", () => {
+	const rules = [
+		{ name: "開発", domains: ["github.com"], keywords: ["漫画"] },
+		{ name: "動画", domains: ["youtube.com"], keywords: [] },
+	];
+
+	it("ドメインを移し、既存ルールから外す", () => {
+		const next = assignDomain(rules, "github.com", "動画");
+		expect(next[0].domains).toEqual([]);
+		expect(next[1].domains).toEqual(["youtube.com", "github.com"]);
+		expect(rules[0].domains).toEqual(["github.com"]);
+	});
+
+	it("存在しないカテゴリは末尾に作る", () => {
+		const next = assignDomain(rules, "comic-action.com", "マンガ");
+		expect(next.at(-1)).toEqual({ name: "マンガ", domains: ["comic-action.com"], keywords: [] });
+	});
+
+	it("null なら外すだけ", () => {
+		expect(assignDomain(rules, "github.com", null).flatMap((r) => r.domains)).toEqual(["youtube.com"]);
+	});
+
+	it("学習したドメインは前のルールのキーワードより優先される", () => {
+		const next = assignDomain(rules, "comic-action.com", "マンガ");
+		expect(classify("第2話 漫画", "https://comic-action.com/episode/1", next)).toBe("マンガ");
+	});
+
+	it("エントリ行から URL を取り出す", () => {
+		expect(urlFromEntryLine("- [ ] [A \\[b\\]](https://a.com/x) (2026-09-25) #tool")).toBe("https://a.com/x");
+		expect(urlFromEntryLine("\t- [ ] 使用済み")).toBeNull();
+		expect(urlFromEntryLine("## 開発")).toBeNull();
 	});
 });
