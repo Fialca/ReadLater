@@ -46,6 +46,17 @@ iPhone Safari ─共有→ ショートカット ─iCloud Drive→ vault/ReadLa
 
 ## 1. プラグインのインストール
 
+### iPhone だけで入れる（BRAT）
+
+1. Obsidian（iPhone）→ 設定 → コミュニティプラグイン → 制限モードをオフ
+2. 「閲覧」で `BRAT` を検索してインストール・有効化
+3. BRAT の設定 → 「Add beta plugin」→ `Fialca/ReadLater` を入力して追加
+4. コミュニティプラグイン一覧で `ReadLater Inbox` を有効化
+
+BRAT は GitHub の Release から `main.js` / `manifest.json` を取得し、以後の更新も自動で取り込む。
+
+### 手動で入れる（PC）
+
 1. ビルド済みファイルを入手する
    - GitHub の Actions → `Build` の最新実行 → Artifacts の `readlater-inbox`、またはタグを打った場合は Releases から `main.js` と `manifest.json`
    - 自分でビルドする場合: `npm ci && npm run build`
@@ -83,7 +94,7 @@ vault の `.obsidian` も iCloud で同期されるので、PC で入れれば i
 使い方: Safari で共有ボタン → 作ったショートカットを選ぶ。
 
 補足
-- `ReadLater/Inbox` フォルダは先に Obsidian か「ファイル」App で作っておく。
+- `ReadLater/Inbox` フォルダはプラグインが起動時に自動で作る。ショートカットの保存先はプラグインを有効化してから選ぶ。
 - 「ファイルを保存」の保存先で vault フォルダを選べない場合は、iOS の「ファイル」App で iCloud Drive/Obsidian が表示されているか（iCloud Drive 同期がオンか）を確認する。
 - key-value 形式以外に、`- [ ] [タイトル](URL)` 形式の行や URL だけの行も受け付ける。
 

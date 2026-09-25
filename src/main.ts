@@ -53,6 +53,7 @@ export default class ReadLaterPlugin extends Plugin {
 		});
 
 		this.app.workspace.onLayoutReady(() => {
+			void this.ensureInboxFolder();
 			// 起動時のファイル走査で create イベントが大量に来るため、登録はレイアウト完成後に行う
 			const onChange = (f: TAbstractFile) => {
 				if (this.settings.autoProcess && this.isInboxFile(f)) this.scheduleProcess();
@@ -252,6 +253,18 @@ export default class ReadLaterPlugin extends Plugin {
 		} else {
 			await this.ensureParent(path);
 			await this.app.vault.create(path, apply(""));
+		}
+	}
+
+	/** ショートカットの保存先に指定できるよう Inbox フォルダを用意しておく */
+	private async ensureInboxFolder(): Promise<void> {
+		const folder = normalizePath(this.settings.inboxFolder);
+		if (this.app.vault.getAbstractFileByPath(folder)) return;
+		try {
+			await this.ensureParent(folder);
+			await this.app.vault.createFolder(folder);
+		} catch (e) {
+			console.error("ReadLater: failed to create inbox folder", e);
 		}
 	}
 
