@@ -58,7 +58,7 @@ BRAT は GitHub の Release から `main.js` / `manifest.json` を取得し、�
 ### 手動で入れる（PC）
 
 1. ビルド済みファイルを入手する
-   - GitHub の Actions → `Build` の最新実行 → Artifacts の `readlater-inbox`、またはタグを打った場合は Releases から `main.js` と `manifest.json`
+   - GitHub の Actions → `Build` の最新実行 → Artifacts の `readlater-inbox`、またはmain に入ると作られる Releases（タグ名 = manifest.json の version）から `main.js` と `manifest.json`
    - 自分でビルドする場合: `npm ci && npm run build`
 2. vault 内に `.obsidian/plugins/readlater-inbox/` を作り、`main.js` と `manifest.json` を置く
 3. Obsidian → 設定 → コミュニティプラグイン → 制限モードをオフ → `ReadLater Inbox` を有効化
